@@ -20,7 +20,7 @@ export class CheWorkspaceClientService {
     private _backend: IBackend;
 
     constructor(@inject(IBaseEnvVariablesServer) protected readonly baseEnvVariablesServer: IBaseEnvVariablesServer) {
-        this.baseEnvVariablesServer.getEnvValueByKey('CHE_API').then((cheApi: string) => {
+        this.baseEnvVariablesServer.getEnvValueByKey('CHE_API_EXTERNAL').then((cheApi: string) => {
             this.cheApi = cheApi;
         });
         this._backend = getBackend();
