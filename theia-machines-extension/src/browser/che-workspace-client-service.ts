@@ -11,7 +11,7 @@
 
 import {inject, injectable} from 'inversify';
 import {IBaseEnvVariablesServer} from '../common/base-env-variables-protocol';
-import {getRestApi, getBackend, IRemoteAPI, IBackend} from 'workspace-client';
+import WorkspaceClient, {IRemoteAPI, IBackend} from '@eclipse-che/workspace-client';
 
 @injectable()
 export class CheWorkspaceClientService {
@@ -23,11 +23,11 @@ export class CheWorkspaceClientService {
         this.baseEnvVariablesServer.getEnvValueByKey('CHE_API_EXTERNAL').then((cheApi: string) => {
             this.cheApi = cheApi;
         });
-        this._backend = getBackend();
+        this._backend = WorkspaceClient.getRestBackend();
     }
 
     get restClient(): IRemoteAPI {
-        return getRestApi({
+        return WorkspaceClient.getRestApi({
             baseUrl: this.cheApi
         });
     }

@@ -10,7 +10,7 @@
  */
 
 import {injectable, inject} from 'inversify';
-import {IWorkspace, IRequestError} from 'workspace-client';
+import {IWorkspace, IRequestError} from '@eclipse-che/workspace-client';
 import {CheWorkspaceClientService} from './che-workspace-client-service';
 import {IBaseEnvVariablesServer} from '../common/base-env-variables-protocol';
 

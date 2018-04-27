@@ -28,7 +28,7 @@
   ],
   "dependencies": {
     "@theia/core": "0.3.8",
-    "workspace-client": "https://github.com/akurinnoy/workspace-client"
+    "@eclipse-che/workspace-client": "0.0.1-1523602788"
   },
   "devDependencies": {
     "rimraf": "2.6.2",
