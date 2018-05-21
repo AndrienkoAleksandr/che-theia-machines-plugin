@@ -88,8 +88,8 @@ export class MachinesViewContribution extends AbstractViewContribution<MachinesV
 
         machines.forEach(machine => {
             const machineEntry = {
-                name: machine.machineName,
-                id: this.getRandId(machine.machineName),
+                name,
+                id: this.getRandId(machine.machineName || ""),
                 parentId: undefined,
                 kind: machine.status ? SymbolKind.Machine : SymbolKind.Empty
             };
@@ -99,7 +99,7 @@ export class MachinesViewContribution extends AbstractViewContribution<MachinesV
             if (status) {
                 entries.push({
                     name: status,
-                    id: this.getRandId(machine.machineName, 'status'),
+                    id: this.getRandId(machine.machineName || "", 'status'),
                     parentId: machineEntry.id
                 });
             }
@@ -132,15 +132,15 @@ export class MachinesViewContribution extends AbstractViewContribution<MachinesV
                 });
             }
             /*
-             // TODO: Add terminal's call if it terminal node.
-             const terminalEntryName = 'terminal';
-             entries.push({
-             name: terminalEntryName,
-             id: this.getRandId(terminalEntryName),
-             parentId: machineEntry.id,
-             kind: SymbolKind.Terminal
-             });
-             */
+            // TODO: Add terminal's call if it terminal node.
+            const terminalEntryName = 'terminal';
+            entries.push({
+            name: terminalEntryName,
+            id: this.getRandId(terminalEntryName),
+            parentId: machineEntry.id,
+            kind: SymbolKind.Terminal
+            });
+            */
         });
 
         this.machineViewService.publish(this.createTree(undefined, entries));
@@ -159,7 +159,7 @@ export class MachinesViewContribution extends AbstractViewContribution<MachinesV
     }
 
     protected convertToNode(symbol: SymbolInformation, parent: NodeAndSymbol | undefined): NodeAndSymbol {
-        const iconClass = this.getClass(symbol.kind);
+        const iconClass = this.getClass(symbol.kind) || "";
         const node: MachinesSymbolInformationNode = {
             children: [],
             id: symbol.id,
@@ -175,7 +175,7 @@ export class MachinesViewContribution extends AbstractViewContribution<MachinesV
     }
 
     private getRandId(nodeName: string, key?: string): string {
-        let uniqueId: string;
+        let uniqueId: string = "";
         let name = key ? `${nodeName}_${key}` : nodeName;
         for (let counter = 0; counter < 100; counter++) {
             uniqueId = `${name}_id_${('0000' + (Math.random() * Math.pow(36, 4) << 0).toString(36)).slice(-4)}`;
@@ -187,7 +187,7 @@ export class MachinesViewContribution extends AbstractViewContribution<MachinesV
         return uniqueId;
     }
 
-    private getClass(symbolKind: SymbolKind): string | undefined {
+    private getClass(symbolKind: SymbolKind | undefined): string | undefined {
         switch (symbolKind) {
             case SymbolKind.Empty:
                 return EMPTY_CLASS;

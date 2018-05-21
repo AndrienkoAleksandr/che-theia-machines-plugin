@@ -10,19 +10,19 @@
  */
 
 import {injectable, inject} from 'inversify';
-import {IWorkspace, IRequestError} from '@eclipse-che/workspace-client';
+import {IWorkspace} from '@eclipse-che/workspace-client';
 import {CheWorkspaceClientService} from './che-workspace-client-service';
 import {IBaseEnvVariablesServer} from '../common/base-env-variables-protocol';
 
 export interface IWorkspaceMachine {
     machineName?: string;
-        servers?: {
-            [serverRef: string]: {
-                url?: string;
-                port?: string;
-            }
-        };
-        status: string;
+    servers?: {
+        [serverRef: string]: {
+            url?: string;
+            port?: string;
+        }
+    };
+    status: string;
 }
 
 @injectable()
@@ -41,34 +41,35 @@ export class CheWorkspaceMachinesService {
 
 
     async updateMachines(): Promise<Array<IWorkspaceMachine>> {
-        if (!this.workspaceId) {
-            return Promise.reject('Failed to get workspaceId');
-        }
-        this.runtimeMachines.length = 0;
+        const restClient = await this.cheWorkspaceClient.restClient;
 
         return new Promise<Array<IWorkspaceMachine>>((resolve, reject) => {
-            this.cheWorkspaceClient.restClient.getById<IWorkspace>(this.workspaceId)
-                .catch((reason: IRequestError) => {
-                    reject(`Failed to get workspace by ID:${this.workspaceId}, Status code: ${reason.status}`);
-                })
-                .then((workspace: IWorkspace) => {
-                    if (workspace && workspace.runtime) {
-                        Object.keys(workspace.runtime.machines).forEach((machineName: string) => {
-                            const machine: IWorkspaceMachine = workspace.runtime.machines[machineName];
-                            machine.machineName = machineName;
-                            this.runtimeMachines.push(machine);
-                        });
-                    } else {
-                        // in the case without workspace runtime
-                        const workspaceMachines = workspace.config.environments[workspace.config.defaultEnv].machines;
-                        Object.keys(workspaceMachines).forEach((machineName: string) => {
-                            const machine: IWorkspaceMachine = workspaceMachines[machineName];
-                            machine.machineName = machineName;
-                            this.runtimeMachines.push(machine);
-                        });
+            if (!this.workspaceId) {
+                return reject('Failed to get workspaceId');
+            }
+            this.runtimeMachines.length = 0; 
+
+            restClient.getById<IWorkspace>(this.workspaceId)
+            .then((workspace: IWorkspace) => {
+                if (workspace && workspace.runtime) {
+                    for (const machineName in workspace.runtime.machines) {
+                        const machine: IWorkspaceMachine = workspace.runtime.machines[machineName];
+                        machine.machineName = machineName;
+                        this.runtimeMachines.push(machine);
                     }
-                    resolve(this.runtimeMachines);
-                });
+                } else {
+                    // in the case without workspace runtime
+                    const workspaceMachines = workspace.config.environments[workspace.config.defaultEnv].machines;
+                    Object.keys(workspaceMachines).forEach((machineName: string) => {
+                        const machine: IWorkspaceMachine = workspaceMachines[machineName];
+                        machine.machineName = machineName;
+                        this.runtimeMachines.push(machine);
+                    });
+                }
+                resolve(this.runtimeMachines);
+            }).catch(error => {
+                reject(`Failed to get workspace by ID:${this.workspaceId}, error`);
+            })
         });
     }
 

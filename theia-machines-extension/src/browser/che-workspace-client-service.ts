@@ -16,20 +16,25 @@ import WorkspaceClient, {IRemoteAPI, IBackend} from '@eclipse-che/workspace-clie
 @injectable()
 export class CheWorkspaceClientService {
 
-    private cheApi: string;
+    private cheApiPromise: Promise<string>;
     private _backend: IBackend;
 
     constructor(@inject(IBaseEnvVariablesServer) protected readonly baseEnvVariablesServer: IBaseEnvVariablesServer) {
-        this.baseEnvVariablesServer.getEnvValueByKey('CHE_API_EXTERNAL').then((cheApi: string) => {
-            this.cheApi = cheApi;
-        });
+        this.cheApiPromise = this.baseEnvVariablesServer.getEnvValueByKey('CHE_API_EXTERNAL');
         this._backend = WorkspaceClient.getRestBackend();
     }
 
-    get restClient(): IRemoteAPI {
-        return WorkspaceClient.getRestApi({
-            baseUrl: this.cheApi
-        });
+    get restClient(): Promise<IRemoteAPI> {
+        return new Promise<IRemoteAPI>((resolve, reject) => {
+            this.cheApiPromise.then(cheApi => {
+                const remoteApi = WorkspaceClient.getRestApi({
+                    baseUrl: cheApi
+                });
+                resolve(remoteApi);
+            }).catch(err => {
+                reject("Unable to get CHE api endPoint.");
+            });
+        })
     }
 
     get backend(): IBackend {
