@@ -74,7 +74,7 @@ export class MachinesViewContribution extends AbstractViewContribution<MachinesV
     }
 
     protected updateMachines() {
-        this.cheMachines.updateMachines().then(() => {
+        this.cheMachines.updateMachines().then(() => { 
             const machines: Array<IWorkspaceMachine> = this.cheMachines.machines;
             this.publish(machines);
         });
@@ -88,8 +88,8 @@ export class MachinesViewContribution extends AbstractViewContribution<MachinesV
 
         machines.forEach(machine => {
             const machineEntry = {
-                name,
-                id: this.getRandId(machine.machineName || ""),
+                name: machine.machineName || '',
+                id: this.getRandId(machine.machineName || ''),
                 parentId: undefined,
                 kind: machine.status ? SymbolKind.Machine : SymbolKind.Empty
             };
@@ -99,7 +99,7 @@ export class MachinesViewContribution extends AbstractViewContribution<MachinesV
             if (status) {
                 entries.push({
                     name: status,
-                    id: this.getRandId(machine.machineName || "", 'status'),
+                    id: this.getRandId(machine.machineName || '', 'status'),
                     parentId: machineEntry.id
                 });
             }
@@ -175,7 +175,7 @@ export class MachinesViewContribution extends AbstractViewContribution<MachinesV
     }
 
     private getRandId(nodeName: string, key?: string): string {
-        let uniqueId: string = "";
+        let uniqueId: string = '';
         let name = key ? `${nodeName}_${key}` : nodeName;
         for (let counter = 0; counter < 100; counter++) {
             uniqueId = `${name}_id_${('0000' + (Math.random() * Math.pow(36, 4) << 0).toString(36)).slice(-4)}`;

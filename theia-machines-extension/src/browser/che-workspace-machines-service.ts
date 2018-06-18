@@ -47,29 +47,28 @@ export class CheWorkspaceMachinesService {
 
     async updateMachines(): Promise<Array<IWorkspaceMachine>> {
         const workspaceId = await this.waitWorkspaceId.promise;
+        if (!workspaceId) {
+            return Promise.reject('Failed to get workspaceId');
+        }
+
         const remoteApi = await this.cheWorkspaceClient.restClient();
 
         return new Promise<Array<IWorkspaceMachine>>((resolve, reject) => {
-            if (!workspaceId) {
-                return Promise.reject('Failed to get workspaceId');
-            }
-            this.runtimeMachines.length = 0;
-
             remoteApi.getById<IWorkspace>(workspaceId)
-                // .catch(reason => {
-                //     reject(`Failed to get workspace by ID:${this.workspaceId}, Status code: ${reason.status}`);
-                // })
                 .then((workspace: IWorkspace) => {
                     const workspaceMachines = workspace && workspace.runtime && workspace.runtime.machines || workspace.config.environments[workspace.config.defaultEnv].machines || [];
 
+                    this.runtimeMachines.splice(0, this.runtimeMachines.length);
                     for (const machineName in workspaceMachines) {
                         const machine: IWorkspaceMachine = workspaceMachines[machineName];
                         machine.machineName = machineName;
                         this.runtimeMachines.push(machine);
                     }
 
-                    resolve(this.runtimeMachines);
-                });
+                    return resolve(this.runtimeMachines);
+                }).catch(reason => {
+                    reject(`Failed to update list machines.`);
+                })
         });
     }
 
