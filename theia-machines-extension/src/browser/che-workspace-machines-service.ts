@@ -10,9 +10,10 @@
  */
 
 import {injectable, inject} from 'inversify';
+import { EnvVariablesServer, EnvVariable } from "@theia/core/lib/common/env-variables";
+import { CheWorkspaceClientService } from './che-workspace-client-service';
 import {IWorkspace} from '@eclipse-che/workspace-client';
-import {CheWorkspaceClientService} from './che-workspace-client-service';
-import {IBaseEnvVariablesServer} from '../common/base-env-variables-protocol';
+import { Deferred } from '@theia/core/lib/common/promise-util';
 
 export interface IWorkspaceMachine {
     machineName?: string;
@@ -29,51 +30,50 @@ export interface IWorkspaceMachine {
 export class CheWorkspaceMachinesService {
 
     protected runtimeMachines: Array<IWorkspaceMachine> = [];
-    protected workspaceId: string | undefined;
+    protected waitWorkspaceId = new Deferred<string>();
 
-    constructor(@inject(CheWorkspaceClientService) private readonly cheWorkspaceClient: CheWorkspaceClientService,
-                @inject(IBaseEnvVariablesServer) protected readonly baseEnvVariablesServer: IBaseEnvVariablesServer) {
+    constructor(
+        @inject(CheWorkspaceClientService) private readonly cheWorkspaceClient: CheWorkspaceClientService,
+        @inject(EnvVariablesServer) protected readonly baseEnvVariablesServer: EnvVariablesServer) {
 
-        this.baseEnvVariablesServer.getEnvValueByKey('CHE_WORKSPACE_ID').then((workspaceId: string) => {
-            this.workspaceId = workspaceId;
+        this.baseEnvVariablesServer.getValue('CHE_WORKSPACE_ID').then((workspaceIdEnv: EnvVariable | undefined) => {
+            if (workspaceIdEnv && workspaceIdEnv.value) {
+                this.waitWorkspaceId.resolve(workspaceIdEnv.value);
+            } else {
+                this.waitWorkspaceId.reject('Failed to get workspace id');
+            }
         });
     }
 
-
     async updateMachines(): Promise<Array<IWorkspaceMachine>> {
-        const restClient = await this.cheWorkspaceClient.restClient;
+        const workspaceId = await this.waitWorkspaceId.promise;
+        const remoteApi = await this.cheWorkspaceClient.restClient();
 
         return new Promise<Array<IWorkspaceMachine>>((resolve, reject) => {
-            if (!this.workspaceId) {
-                return reject('Failed to get workspaceId');
+            if (!workspaceId) {
+                return Promise.reject('Failed to get workspaceId');
             }
-            this.runtimeMachines.length = 0; 
+            this.runtimeMachines.length = 0;
 
-            restClient.getById<IWorkspace>(this.workspaceId)
-            .then((workspace: IWorkspace) => {
-                if (workspace && workspace.runtime) {
-                    for (const machineName in workspace.runtime.machines) {
-                        const machine: IWorkspaceMachine = workspace.runtime.machines[machineName];
-                        machine.machineName = machineName;
-                        this.runtimeMachines.push(machine);
-                    }
-                } else {
-                    // in the case without workspace runtime
-                    const workspaceMachines = workspace.config.environments[workspace.config.defaultEnv].machines;
-                    Object.keys(workspaceMachines).forEach((machineName: string) => {
+            remoteApi.getById<IWorkspace>(workspaceId)
+                // .catch(reason => {
+                //     reject(`Failed to get workspace by ID:${this.workspaceId}, Status code: ${reason.status}`);
+                // })
+                .then((workspace: IWorkspace) => {
+                    const workspaceMachines = workspace && workspace.runtime && workspace.runtime.machines || workspace.config.environments[workspace.config.defaultEnv].machines || [];
+
+                    for (const machineName in workspaceMachines) {
                         const machine: IWorkspaceMachine = workspaceMachines[machineName];
                         machine.machineName = machineName;
                         this.runtimeMachines.push(machine);
-                    });
-                }
-                resolve(this.runtimeMachines);
-            }).catch(error => {
-                reject(`Failed to get workspace by ID:${this.workspaceId}, error`);
-            })
+                    }
+
+                    resolve(this.runtimeMachines);
+                });
         });
     }
 
     get machines(): Array<IWorkspaceMachine> {
-        return  this.runtimeMachines;
+        return this.runtimeMachines;
     }
 }
