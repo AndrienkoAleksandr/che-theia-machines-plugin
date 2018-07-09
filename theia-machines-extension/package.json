@@ -27,7 +27,7 @@
     "src"
   ],
   "dependencies": {
-    "@theia/core": "0.3.12",
+    "@theia/core": "0.3.11",
     "@eclipse-che/workspace-client": "0.0.1-1527159618"
   },
   "devDependencies": {
